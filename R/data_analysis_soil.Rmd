@@ -10,3 +10,108 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 ```
+
+---ICPMS---
+1. Import the data
+```{r, warning=FALSE, message=FALSE}
+ICPMS_imported <- read.csv("~/Chem 313/soillab2020/data/ICPMS_Data.csv", 
+                           skip = 1, 
+                           na = "N/A")
+sample_key <- read.csv("~/Chem 313/soillab2020/data/Sample_Key.csv", skip = 0)
+
+#preview data
+ICPMS_imported
+sample_key
+```
+
+2.Tidy the data
+```{r}
+RSD_data <- ICPMS_imported %>%
+  #first the RSD columns are selected and renamed with the apropriate metal isotope
+  select(Cr52 = CPS.RSD,
+         Cr53 = CPS.RSD.1,
+         As75 = CPS.RSD.2,
+         Cd111 = CPS.RSD.3,
+         Cd114 = CPS.RSD.4,
+         Pb208 = CPS.RSD.5,
+         Ge_RSD = CPS.RSD.7,
+         Sample.Key) %>%
+  pivot_longer(1:6,
+               names_to = "metal",
+               values_to = "RSD")
+
+
+ICPMS_tidy <- ICPMS_imported %>%
+  #first the RSD columns are selected and renamed with the apropriate metal isotope
+  select(Cr52 = CPS,
+         Cr53 = CPS.1,
+         As75 = CPS.2,
+         Cd111 = CPS.3,
+         Cd114 = CPS.4,
+         Pb208 = CPS.5,
+         Ge72 = CPS.7,
+         Sample.Key) %>%
+  pivot_longer(1:6,
+               names_to = "metal",
+               values_to = "CPS") %>%
+  #mutating in the RSD data
+  mutate(RSD = RSD_data$RSD/RSD_data$Ge_RSD,
+         CPS=CPS/Ge72) %>% #ISTD correction
+  select(-Ge72)
+
+ICPMS_merged <- merge(ICPMS_tidy, sample_key)
+
+#preview data
+RSD_data
+ICPMS_tidy
+ICPMS_merged
+```
+
+save as cvs file
+```{r}
+write.csv(ICPMS_merged, file = "~/Chem 313/soillab2020/data/ICPMS_tidy.csv")
+```
+
+declutter environment
+```{r, warning=FALSE}
+# rm(list=setdiff(ls(), "ICPMS_merged"))
+```
+
+---AA---
+1.Import data
+```{r, warning=FALSE, message=FALSE}
+AA_Data <- read_csv("~/Chem 313/soillab2020/data/AA_Data.csv", skip = 4)
+
+AA_tidy <- AA_Data %>%
+  rename(Sample.Key = "Sample Key") %>%
+  rename(percentRSD = "%RSD")
+
+AA_tidy$Sample.Key <-gsub("Sample Blank", 0, AA_tidy$Sample.Key)
+AA_tidy$Sample.Key <-gsub("check10", 99, AA_tidy$Sample.Key)
+
+#AA_tidy$Sample.key[AA_tidy$Sampe.key=="check10"] <- 98
+#AA_tidy$Sample.key[AA_tidy$Sampe.key=="Sample Blank"] <- 99
+
+AA_tidy$Sample.Key <- as.numeric(AA_tidy$Sample.Key)
+AA_tidy$percentRSD <- as.numeric(AA_tidy$percentRSD)
+
+AA_merged <- merge(sample_key, AA_tidy)
+view(AA_merged)
+
+```
+
+save as cvs file
+```{r}
+write.csv(AA_merged, file = "~/Chem 313/soillab2020/data/AA_tidy.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
